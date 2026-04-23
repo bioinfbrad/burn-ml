@@ -1,0 +1,17 @@
+model.py filter=lfs diff=lfs merge=lfs -text
+output filter=lfs diff=lfs merge=lfs -text
+burn_multiple_class.model filter=lfs diff=lfs merge=lfs -text
+data filter=lfs diff=lfs merge=lfs -text
+data.sh filter=lfs diff=lfs merge=lfs -text
+Confusion_matrix.png filter=lfs diff=lfs merge=lfs -text
+Zoomed.png filter=lfs diff=lfs merge=lfs -text
+newdat.py filter=lfs diff=lfs merge=lfs -text
+GPU.py filter=lfs diff=lfs merge=lfs -text
+best_params.pickle filter=lfs diff=lfs merge=lfs -text
+evaluation.py filter=lfs diff=lfs merge=lfs -text
+evaluation.sh filter=lfs diff=lfs merge=lfs -text
+logs filter=lfs diff=lfs merge=lfs -text
+roc_curve.png filter=lfs diff=lfs merge=lfs -text
+tensorflow-gpu.sh filter=lfs diff=lfs merge=lfs -text
+train.py filter=lfs diff=lfs merge=lfs -text
+best.py filter=lfs diff=lfs merge=lfs -text
