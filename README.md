@@ -1,4 +1,6 @@
 # Burn-ML
+[![DOI](https://zenodo.org/badge/1037282235.svg)](https://doi.org/10.5281/zenodo.19708992)
+
 
 This repository contains two separate deep learning projects for burn image analysis.
 
