@@ -1,0 +1,13 @@
+# burn-ml: Python 3.10 (TensorFlow 2.15 supports Python 3.9-3.11)
+#   python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
+# NVIDIA GPU on Linux: replace the tensorflow line with  tensorflow[and-cuda]==2.15.1
+# Exact versions used for the paper (71 packages): env/requirements-tf215-cuda12.txt
+tensorflow==2.15.1
+keras==2.15.0
+numpy==1.26.4
+scipy==1.15.3
+scikit-learn==1.7.2
+scikit-optimize==0.10.2
+opencv-python-headless==4.11.0.86
+matplotlib==3.10.9
+h5py==3.14.0

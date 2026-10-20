@@ -24,7 +24,7 @@ else
     echo "       directory (. slurm/config.sh) or from slurm/ (. ./config.sh)."
     return 1 2>/dev/null || exit 1
 fi
-RAW=${PROJECT}/raw_Images
+RAW=${BURNML_RAW:-${PROJECT}/raw_Images}
 SCRIPTS=${PROJECT}/scripts
 
 # Real patient identifiers, if you have them (CSV header: source_id,patient_id).
@@ -35,7 +35,7 @@ PATIENT_MAP=
 # conda  : the environment built by env/setup_env.sh (TF 2.15 or 2.14)
 # module : the cluster's TensorFlow 2.6 module (EfficientNetB0, DenseNet121,
 #          ResNet50V2 and MobileNetV2 are all available there too)
-ENV_MODE=conda
+ENV_MODE=${BURNML_ENV_MODE:-conda}   # conda | module | current (the Python already on PATH; used by run_local.sh)
 CONDA_ENV=burnml
 TF_MODULE=tensorflow-gpu
 # The environment's absolute path is recorded by env/setup_env.sh in
@@ -137,6 +137,11 @@ check_package() {
 # ------------------------------------------------------------ activation --- #
 activate_env() {
     check_package || return 1
+    if [ "${ENV_MODE}" = "current" ]; then
+        # Local runs (run_local.sh): use the Python the user has activated
+        # (virtualenv, conda environment or system install).
+        command -v python >/dev/null 2>&1 || { echo "ERROR: no 'python' on PATH"; return 1; }
+    else
     if command -v module >/dev/null 2>&1; then
         module purge >/dev/null 2>&1 || true
     fi
@@ -171,9 +176,13 @@ activate_env() {
             export XLA_FLAGS="--xla_gpu_cuda_data_dir=${SITE}/nvidia/cuda_nvcc"
         fi
     fi
+    fi
     mkdir -p "${RESULTS}"
-    export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
-    export MKL_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+    # Inside SLURM jobs, match the threads to the CPUs allocated; on a local
+    # machine leave them unset so TensorFlow can use every core.
+    if [ -n "${SLURM_CPUS_PER_TASK:-}" ]; then
+        export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK} MKL_NUM_THREADS=${SLURM_CPUS_PER_TASK}
+    fi
     export TF_CPP_MIN_LOG_LEVEL=2
     echo "environment: ${ENV_MODE} | python $(python -c 'import sys; print(sys.version.split()[0])') | results ${RESULTS}$( [ "${SMOKE}" = "1" ] && echo ' | SMOKE TEST')"
 }

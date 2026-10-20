@@ -1,0 +1,40 @@
+# --- patient data and anything derived from it: never commit -------------------
+data/*
+!data/README.md
+*.jpg
+*.jpeg
+*.png
+*.tif
+*.tiff
+*.bmp
+manifest*.csv
+*predictions*.csv
+# --- pipeline outputs (contain accession-derived identifiers) ------------------
+run*/
+results/*
+!results/RESULTS_LEDGER.md
+!results/figures/
+!results/figures/*.pdf
+slurm/logs/
+logs/
+logs_local/
+results_smoke/
+# --- trained models: published as a release download, not in git ---------------
+models/
+dist/
+# --- models and arrays -----------------------------------------------------------
+*.keras
+*.h5
+*.hdf5
+*.pb
+*.pickle
+*.pkl
+*.npy
+*.npz
+weights/
+# --- environment and system --------------------------------------------------------
+env/env_prefix.txt
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
