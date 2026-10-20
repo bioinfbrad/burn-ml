@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below, together with the associated paper."
+title: "burn-ml: patient-level evaluation of convolutional neural networks for burn images"
+version: 2.0.0
+date-released: 2026-10-20
+repository-code: "https://github.com/bioinfbrad/burn-ml"
+authors:
+  - family-names: Smith
+    given-names: Kirsty
+  - family-names: Jumah
+    given-names: Khaled
+    orcid: "https://orcid.org/0000-0001-5481-8893"
+  - family-names: Poterlowicz
+    given-names: Krzysztof
+    orcid: "https://orcid.org/0000-0001-6173-5674"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.19708993
+    description: "Archive of version 1.0.0 (the preliminary analysis, superseded by this version)"
+keywords:
+  - burns
+  - deep learning
+  - convolutional neural network
+  - medical imaging
+  - data leakage
