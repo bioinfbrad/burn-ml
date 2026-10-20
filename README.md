@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/1037282235.svg)](https://doi.org/10.5281/zenodo.19708992)
+
 # burn-ml: patient-level evaluation of convolutional neural networks for burn images
 
 Code for the study *Machine learning as a tool to differentiate between images of burnt and normal skin* (manuscript under review at *Burns & Trauma*). It trains and evaluates convolutional neural networks (CNNs) for two tasks on clinical photographs of burns:
