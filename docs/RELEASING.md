@@ -17,7 +17,7 @@ The trained networks are not stored in git. They are published as a file attache
    python scripts/predict.py --task detection --models-dir /tmp/check/models some_test_crops/
    ```
 
-3. **Release on GitHub**: Releases → Draft a new release → tag `v2.0.0` → attach `burn-ml-models-v2.0.0.zip` → paste the SHA-256 into the release notes → Publish.
+3. **Release on GitHub**: Releases → Draft a new release → tag `2.0.0` → attach `burn-ml-models-v2.0.0.zip` as a release file (do **not** commit it to the repository or to Git LFS) → paste the SHA-256 into the release notes → Publish. Then add the version and its SHA-256 to `KNOWN_SHA256` in `scripts/download_models.py`, so downloads are verified automatically.
 
 4. **Archive on Zenodo**: if the GitHub integration is enabled, the release's source code is archived automatically. Upload the model zip to Zenodo as well (in the same record or a linked one), so that the weights have a permanent DOI.
 
