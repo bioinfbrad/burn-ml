@@ -66,9 +66,18 @@ def ssim(a, b):
 
 
 def spearman(a, b):
+    """Rank correlation; NaN when either map is flat (constant), where it is
+    undefined. Flat maps arise when the ReLU zeroes a whole map after
+    randomisation. The summary counts them and reports the mean both with
+    them set to 0 (as originally reported) and with them excluded."""
+    import warnings
     from scipy.stats import spearmanr
-    r = spearmanr(a.ravel(), b.ravel()).correlation
-    return float(r) if r == r else 0.0
+    if np.ptp(a) == 0 or np.ptp(b) == 0:
+        return float("nan")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        r = spearmanr(a.ravel(), b.ravel()).correlation
+    return float(r) if r == r else float("nan")
 
 
 STAGES = [("head", lambda n: False), ("top", lambda n: n.startswith("top")),
@@ -217,8 +226,13 @@ def main():
 
     out_dir = os.path.join(args.run_dir, "report")
     os.makedirs(out_dir, exist_ok=True)
-    summary = {s: {k: float(np.mean(v)) if v else float("nan") for k, v in d.items()}
-               for s, d in sanity.items()}
+    summary = {}
+    for s_, d in sanity.items():
+        sp = np.array(d["spearman"], dtype=float); undefined = int(np.isnan(sp).sum())
+        summary[s_] = {"spearman": float(np.mean(np.nan_to_num(sp, nan=0.0))) if len(sp) else float("nan"),
+                       "spearman_defined_only": float(np.nanmean(sp)) if undefined < len(sp) else float("nan"),
+                       "undefined_flat_maps": undefined, "comparisons": int(len(sp)),
+                       "ssim": float(np.mean(d["ssim"])) if d["ssim"] else float("nan")}
     json.dump(burnml.jsonable({"panel": [m[0] for m in maps], "sanity_check": summary,
                                "note": "similarity of the trained-model map to maps after "
                                        "cumulative weight randomisation; values near 1 "
@@ -238,7 +252,9 @@ def main():
 
     print("\nsanity check: mean similarity to the trained-model map after cumulative randomisation")
     for s, v in summary.items():
-        print(f"   randomised up to {s:<7} Spearman {v['spearman']:+.3f}   SSIM {v['ssim']:+.3f}")
+        print(f"   randomised up to {s:<7} Spearman {v['spearman']:+.3f}   SSIM {v['ssim']:+.3f}   "
+              f"| flat maps {v['undefined_flat_maps']}/{v['comparisons']}, "
+              f"Spearman excluding them {v['spearman_defined_only']:+.3f}")
     print(f"\nWrote fig_gradcam_panel.pdf/.png, gradcam.json and the maps (.npz, patient images: do not publish) to {out_dir}")
 
 
