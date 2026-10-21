@@ -96,6 +96,55 @@ def randomise(model, upto, rng):
                 redraw(l)
 
 
+NAMES = {"Partial_thickness_burn": "Partial-thickness", "Full_thickness_burn": "Full-thickness",
+         "Normal_skin": "Normal skin", "burned_skin": "Burnt skin"}
+
+
+def patient_numbers(manifest):
+    """file -> anonymous patient number (sorted group order, as in 12/13_*.py)."""
+    import csv
+    rows = list(csv.DictReader(open(manifest)))
+    groups = sorted({r["patient_group"] for r in rows})
+    return {r["file"]: groups.index(r["patient_group"]) + 1 for r in rows}
+
+
+def find_manifest(run_dir):
+    d = os.path.abspath(run_dir)
+    while d != os.path.dirname(d):
+        if os.path.exists(os.path.join(d, "manifest.csv")):
+            return os.path.join(d, "manifest.csv")
+        d = os.path.dirname(d)
+    return None
+
+
+def plot_panel(maps, labels, pid, out_dir):
+    """Publication panel. Titles carry anonymous patient numbers and class names only;
+    never file names or patient group names (derived from accession numbers)."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    n = len(maps); cols = 6; rows = int(np.ceil(n / cols))
+    fig, axes = plt.subplots(rows, cols, figsize=(2.3 * cols, 2.7 * rows), squeeze=False)
+    for ax in axes.ravel():
+        ax.axis("off")
+    for k, (c, im, cam) in enumerate(maps):
+        ax = axes[k // cols][k % cols]
+        heat = cv2.applyColorMap((255 * cam).astype(np.uint8), cv2.COLORMAP_JET)[:, :, ::-1]
+        ax.imshow((0.6 * im + 0.4 * heat).astype(np.uint8))
+        err = c["true"] != c["pred"]
+        who = f"Patient {pid[c['file']]}" if c["file"] in pid else "Patient ?"
+        ax.set_title(f"{who}\n{NAMES.get(labels[c['true']], labels[c['true']])} \u2192 "
+                     f"{NAMES.get(labels[c['pred']], labels[c['pred']])} ({c['conf']:.2f})",
+                     fontsize=6.5, color="crimson" if err else "black")
+    fig.suptitle("Grad-CAM, averaged over the held-out models of each crop's fold "
+                 "(red titles: misclassified). Highlighted regions influenced the output; "
+                 "they are not evidence of clinical reasoning.", fontsize=7.5)
+    fig.tight_layout()
+    for ext in ("pdf", "png"):
+        fig.savefig(os.path.join(out_dir, f"fig_gradcam_panel.{ext}"), dpi=300)
+    plt.close(fig)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", required=True)
@@ -105,6 +154,9 @@ def main():
     ap.add_argument("--all-errors-class", default="Full_thickness_burn")
     ap.add_argument("--max-panel", type=int, default=30)
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--manifest", default=None,
+                    help="manifest.csv used to number patients 1..N as in the paper's figures "
+                         "(default: the nearest manifest.csv above --run-dir)")
     args = ap.parse_args()
 
     burnml.configure_gpu()
@@ -173,30 +225,21 @@ def main():
                                        "would mean the maps ignore the learned weights"}),
               open(os.path.join(out_dir, "gradcam.json"), "w"), indent=2)
 
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    n = len(maps); cols = 6; rows = int(np.ceil(n / cols))
-    fig, axes = plt.subplots(rows, cols, figsize=(2.3 * cols, 2.6 * rows), squeeze=False)
-    for ax in axes.ravel():
-        ax.axis("off")
-    for k, (c, im, cam) in enumerate(maps):
-        ax = axes[k // cols][k % cols]
-        heat = cv2.applyColorMap((255 * cam).astype(np.uint8), cv2.COLORMAP_JET)[:, :, ::-1]
-        ax.imshow((0.6 * im + 0.4 * heat).astype(np.uint8))
-        ok = "correct" if c["true"] == c["pred"] else "ERROR"
-        ax.set_title(f"{labels[c['true']][:4]}->{labels[c['pred']][:4]} {c['conf']:.2f}\n{ok}",
-                     fontsize=7, color="black" if ok == "correct" else "crimson")
-    fig.suptitle("Grad-CAM (ensemble mean over the fold's held-out models). Regions that "
-                 "influence the output; not evidence of clinical reasoning.", fontsize=8)
-    fig.tight_layout()
-    fig.savefig(os.path.join(out_dir, "fig_gradcam_panel.png"), dpi=200)
-    plt.close(fig)
+    manifest = args.manifest or find_manifest(args.run_dir)
+    pid = patient_numbers(manifest) if manifest else {}
+    plot_panel(maps, labels, pid, out_dir)
+    # The maps and images themselves, so the figure can be redrawn without a GPU.
+    # They contain patient images: keep them on the secure system, never publish them.
+    np.savez_compressed(os.path.join(out_dir, "gradcam_maps_CONTAINS_PATIENT_IMAGES.npz"),
+                        images=np.stack([m[1] for m in maps]), cams=np.stack([m[2] for m in maps]),
+                        true=np.array([m[0]["true"] for m in maps]), pred=np.array([m[0]["pred"] for m in maps]),
+                        conf=np.array([m[0]["conf"] for m in maps]),
+                        patient=np.array([pid.get(m[0]["file"], 0) for m in maps]))
 
     print("\nsanity check: mean similarity to the trained-model map after cumulative randomisation")
     for s, v in summary.items():
         print(f"   randomised up to {s:<7} Spearman {v['spearman']:+.3f}   SSIM {v['ssim']:+.3f}")
-    print(f"\nWrote fig_gradcam_panel.png and gradcam.json to {out_dir}")
+    print(f"\nWrote fig_gradcam_panel.pdf/.png, gradcam.json and the maps (.npz, patient images: do not publish) to {out_dir}")
 
 
 if __name__ == "__main__":
